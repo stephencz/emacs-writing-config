@@ -19,7 +19,7 @@
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
- '(package-selected-packages '(s projectile use-package evil)))
+ '(package-selected-packages '(wc-mode s magit projectile use-package evil)))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
@@ -49,13 +49,14 @@
   :config
   (define-key projectile-mode-map (kbd "C-x p") 'projectile-command-map)
 
+(use-package magit
+  :ensure t)
+
+(use-package wc-mode
+  :ensure t)
 
 ;;
-;;
-;;
 ;; writer-vision-mode
-;;
-;;
 ;;
 
 (defgroup writer-vision-group nil
@@ -84,7 +85,7 @@
   '(
     ("\\(\".*?\"\\)" . 'writer-vision-dialogue-face)
     ("[!@#$%&*,<>/?;:.-]" . 'writer-vision-punc-face)
-    ("\\b\\(thing\\)\\b\\|\\b\\(got\\)\\b\\|\\b\\(just\\)\\b\\|\\b\\(very\\)\\b\\|\\b\\w*\\(ly\\)\\b" . 'writer-vision-weak-face)
+    ("\\b\\(so\\)\\b\\|\\b\\(literally\\)\\b\\|\\b\\(stuff\\)\\b\\|\\b\\(never\\)\\b\\|\\b\\(believe\\)\\b\\|\\b\\(think\\)\\b\\|\\b\\(often\\)\\b\\|\\\b\\(\\)\\b\\|\\b\\(small\\)\\b\\|\\b\\(big\\)\\b\\|\b\\(almost\\)\\b\\|\\b\\(thing\\)\\b\\|\\b\\(got\\)\\b\\|\\b\\(just\\)\\b\\|\\b\\(very\\)\\b\\|\\b\\w*\\(ly\\)\\b" . 'writer-vision-weak-face)
   )
   "Keywords for writer-vision-mode")
 
@@ -102,15 +103,16 @@
 (provide 'writer-vision-mode)
 
 ;;
-;;
-;;
 ;; Configure linum-mode
-;;
-;;
 ;;
 
 (setq reading-wpm 230)
-(setq linum-time-mode 0)
+
+(defun change-average-wpm (a)
+  (interactive
+   (list
+    (read-number "New WPM: ")))
+  (setq reading-wpm a))
 
 (defface word-count-face
   `((t :inherit 'linum
@@ -118,18 +120,6 @@
        :foreground "#FBFF8A"))
   "Face for word count"
   :group 'linum)
-
-;; Gets the time in minutes it would take the
-;; average reader to reader the passed in number
-;; of words.
-(defun get-read-time (words)
-  (/ (float words) (float reading-wpm)))
-
-
-(defun get-formatted-read-time (words)
-  (setq time (get-read-time words))
-  (cond ((< time 1.0) (concat (number-to-string (* 60.0 time )) " sec"))
-	((>= time 1.0) (concat (number-to-string time) " min"))))
 
 ;; Gets the text at the passed in line number
 (defun get-nth-line (number)
@@ -142,35 +132,58 @@
        (line-beginning-position)
        (line-end-position)))))
 
+;; Gets the time in minutes it would take the
+;; average reader to reader the passed in number
+;; of words.
+(defun get-read-time (words)
+  (/ (float words) (float reading-wpm)))
+
+;; Returns a string containing the time to read based
+;; on a passed in word count.
+(defun get-formatted-read-time (words)
+  (setq time (get-read-time words))
+  (setq seconds_str (concat (number-to-string (truncate (* 60.0 (mod time 1.0)))) "s"))
+  (setq minutes_str (concat (number-to-string (truncate time)) "m"))
+  (concat minutes_str " : " seconds_str))
+
+	
 ;; Counts the number of words in line of the
 ;; passed in line number
-(defun count-words-in-line (line)
+(defun get-linum-display-string (line)
   (setq count (s-count-matches "\\b\\w+\\b" (get-nth-line line)))
-  (if (>= linum-time-mode 1) 
+  (setq time_str (get-formatted-read-time count))
+  
   (cond ((< count 0) "")
 	((> count 0)
 	 (propertize
-	  (concat " " (get-formatted-read-time count))
+	  (concat " " (number-to-string count) " (" time_str ")")
 	  'face 'word-count-face
 	  ))))
 
-  (if (<= linum-time-mode 0) 
-  (cond ((< count 0) "")
-	((> count 0)
-	 (propertize
-	  (concat " " (number-to-string count))
-	  'face 'word-count-face
-	  )))))
-
 ;; Linum now displays word count
-(setq linum-format (lambda (line) (count-words-in-line line)))
+(setq linum-format (lambda (line) (get-linum-display-string line)))
 
 ;;
+;; Mode Line Formatting
 ;;
+
+(setq-default mode-line-format
+	      (list
+	       "[Buffer: %b"
+	       "] "
+	       '(:eval
+		     (wc-format-modeline-string "[WC: %tw]"))
+	       '(:eval (concat
+			" [T: " 
+			(get-formatted-read-time (+ wc-orig-words wc-words-delta))
+			"] "))
+	       "<%l:%c>"
+		   
+	       ))
+
+
 ;;
 ;; Generic Configuration
-;;
-;;
 ;;
 
 ;; Turn of the annoying ass bell
@@ -185,7 +198,7 @@
 (setq inhibit-startup-screen t)
 
 ;; For windows, set default directory to the desktop
-(setq default-directory "~/.emacs/")
+(setq default-directory "D:/Writing/")
 
 ;; Set Monokai as default theme
 (add-to-list 'custom-theme-load-path "~/.emacs.d/themes/")
@@ -193,7 +206,6 @@
 
 ;; Set font and font size
 (set-frame-font "Courier Prime 10" nil t)
-;;(set-frame-font "Fira Code 10" nil t)
 
 (defun enable-writing-minor-modes ()
   (text-mode 1)
@@ -206,9 +218,12 @@
 (add-to-list 'auto-mode-alist '("\\.md\\'" . text-mode))
 (add-to-list 'auto-mode-alist '("\\.markdown\\'" . text-mode))
 
+;; Add hooks for additional modes when text mode is
+;; activated.
 (add-hook 'text-mode-hook 'writer-vision-mode)
 (add-hook 'text-mode-hook 'visual-line-mode)
 (add-hook 'text-mode-hook 'linum-mode)
+(add-hook 'text-mode-hook 'wc-mode)
 
 ;; Add keybinding for word count
 (global-set-key (kbd "C-c w") 'count-words)

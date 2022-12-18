@@ -67,13 +67,12 @@
       (*variable*           "#8AC6F2")
       (*vertical-border*    "#0A1721")
       (*visual-selection*   "#262D51")
-      (*wv-punc-fg*         "#FF3333")
+      (*wv-punc-fg*         "#FFA500")
       (*wv-punc-bg*         "#63601C")
-      (*wv-dial-fg*         "#00FF84")
+      (*wv-dial-fg*         "#89E14B")
       (*wv-dial-bg*         "#0F361A")
       (*wv-weak-fg*         "#FF3333")
-      (*wv-weak-bg*         "#571414")
-      (*linum-fg*           "#F00"))
+      (*wv-weak-bg*         "#571414"))
 
   (custom-theme-set-faces
    'underwater
