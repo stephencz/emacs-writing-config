@@ -2,11 +2,7 @@
 ;; Date: December 2022
 
 ;;
-;;
-;;
 ;; Third-Party Package Configuration
-;;
-;;
 ;;
 
 ;; Install and Configure Melpa
@@ -150,7 +146,7 @@
 ;; Counts the number of words in line of the
 ;; passed in line number
 (defun get-linum-display-string (line)
-  (setq count (s-count-matches "\\b\\w+\\b" (get-nth-line line)))
+  (setq count (s-count-matches "\\w+\\([']\\w+\\)*" (get-nth-line line)))
   (setq time_str (get-formatted-read-time count))
   
   (cond ((< count 0) "")
